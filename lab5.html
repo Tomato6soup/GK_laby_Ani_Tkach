@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Objects in WebGL</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+    <script>
+        let scene = new THREE.Scene();
+        let camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        let renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+        
+        let objectNumber = 1;
+        let group = new THREE.Group();
+        
+        function createRainbowMaterial() {
+            let colors = [0xff0000, 0xffa500, 0xffff00, 0x00ff00, 0x0000ff, 0x4b0082, 0xee82ee];
+            return colors.map(color => new THREE.LineBasicMaterial({ color }));
+        }
+        
+        function createHelix() {
+            let materials = createRainbowMaterial();
+            let group = new THREE.Group();
+            let r = 3, t = 8, h = t / 120;
+            for (let i = 0, y = -5, angle = 0; y <= t; y += h, angle += Math.PI / 9, i++) {
+                let geometry = new THREE.BufferGeometry();
+                let points = [
+                    new THREE.Vector3(Math.cos(angle) * r, y, Math.sin(angle) * r),
+                    new THREE.Vector3(Math.cos(angle + Math.PI / 9) * r, y + h, Math.sin(angle + Math.PI / 9) * r)
+                ];
+                geometry.setFromPoints(points);
+                let line = new THREE.Line(geometry, materials[i % materials.length]);
+                group.add(line);
+            }
+            return group;
+        }
+        
+        function createPyramid() {
+            let geometry = new THREE.ConeGeometry(3, 5, 4,5,6,12);
+            let material = new THREE.MeshBasicMaterial({ vertexColors: true, wireframe: true });
+            let colors = [0xff0000, 0xffa500, 0xffff00, 0x00ff00, 0x0000ff, 0x4b0082, 0xee82ee];
+            let colorAttribute = new Float32Array(geometry.attributes.position.count * 3);
+            for (let i = 0; i < geometry.attributes.position.count; i++) {
+                let color = new THREE.Color(colors[i % colors.length]);
+                color.toArray(colorAttribute, i * 3);
+            }
+            geometry.setAttribute('color', new THREE.BufferAttribute(colorAttribute, 3));
+            return new THREE.Mesh(geometry, material);
+        }
+        
+        function switchObject() {
+            group.clear();
+            if (objectNumber === 1) {
+                group.add(createHelix());
+            } else if (objectNumber === 2) {
+                group.add(createPyramid());
+            }
+        }
+        
+        scene.add(group);
+        camera.position.z = 10;
+        switchObject();
+        
+        let rotateX = 0, rotateY = 0;
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            group.rotation.x = rotateX;
+            group.rotation.y = rotateY;
+            renderer.render(scene, camera);
+        }
+        animate();
+        
+        window.addEventListener("keydown", function(event) {
+            if (event.key === "ArrowLeft") rotateY -= 0.1;
+            if (event.key === "ArrowRight") rotateY += 0.1;
+            if (event.key === "ArrowUp") rotateX -= 0.1;
+            if (event.key === "ArrowDown") rotateX += 0.1;
+            if (event.key === "1") { objectNumber = 1; switchObject(); }
+            if (event.key === "2") { objectNumber = 2; switchObject(); }
+        });
+    </script>
+</body>
+</html>
